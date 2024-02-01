@@ -17,7 +17,7 @@ def get_available_filename(base_filename):
         index += 1
 
 
-def format_log(input_file, output_file):
+def format_log(input_file, output_file, level_filter=None):
     # Read the content of the log file and split it into lines
     with open(input_file, 'r') as f:
         log_content = f.read().splitlines()
@@ -31,8 +31,8 @@ def format_log(input_file, output_file):
             log_json = json.loads(log_entry)
             log_level = log_json.get("level", -1)
 
-            # Check if the log level is 3 or 4
-            if log_level in [3, 4]:
+            # Check if the log level matches the filter (if provided)
+            if level_filter is None or log_level in level_filter:
                 # Set a label based on the log level
                 level_label = "ERROR" if log_level == 3 else "FATAL"
 
@@ -49,7 +49,7 @@ def format_log(input_file, output_file):
             # Print an error message if JSON decoding fails
             print(f"Error decoding JSON: {e}")
 
-    # Generate an available filename for the formatted log file
+    # Generate unique filenames for the formatted log files
     output_file = get_available_filename(output_file)
 
     # Write the formatted log entries to the new file
@@ -59,6 +59,8 @@ def format_log(input_file, output_file):
             f.write(f"Level: {formatted_log['level']}\n")
             f.write(
                 f"Time: {formatted_log['time']} - User: {formatted_log['user']}, Method: {formatted_log['method']}, URL: {formatted_log['url']}, Message: {formatted_log['message']}\n\n")
+
+    return output_file  # Return the generated filename
 
 
 if __name__ == "__main__":
@@ -70,15 +72,16 @@ if __name__ == "__main__":
     # Get the file name from the command line
     input_file = sys.argv[1]
 
-    # Set the output file name (created in the same directory as the script is run from)
-    output_file = "formatted_logfile.txt"
+    # Set the output file names
+    filtered_output_file = f"{os.path.splitext(input_file)[0]}_formatted_filtered.txt"
+    all_output_file = get_available_filename(f"{os.path.splitext(input_file)[0]}_formatted_all.txt")
 
-    # Get the available filename
-    available_filename = get_available_filename(output_file)
+    # Call the format_log function for level 3 and 4 errors
+    filtered_filename = format_log(input_file, filtered_output_file, level_filter=[3, 4])
 
-    # Call the format_log function with the given file names
-    format_log(input_file, available_filename)
+    # Call the format_log function for all errors
+    all_filename = format_log(input_file, all_output_file)
 
-    # Print a message indicating that the formatted log file has been created
-    print(f"Formatted log file created: {available_filename}")
-
+    # Print messages indicating that the formatted log files have been created
+    print(f"Filtered formatted log file created: {filtered_filename}")
+    print(f"All formatted log file created: {all_filename}")
