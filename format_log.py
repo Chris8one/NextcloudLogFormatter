@@ -1,14 +1,14 @@
 import json
 import sys
 import os
-
+from datetime import datetime
 
 def get_available_filename(base_filename):
-    # Function to generate an available filename with incremental numbering
+    # Funktion för att generera ett tillgängligt filnamn med inkrementellt numrering
     if not os.path.exists(base_filename):
         return base_filename
 
-    # If the file already exists, increment the number until an available file is found
+    # Om filen redan finns, öka numret tills ett tillgängligt filnamn hittas
     index = 1
     while True:
         new_filename = f"{os.path.splitext(base_filename)[0]}_{index}.txt"
@@ -16,72 +16,77 @@ def get_available_filename(base_filename):
             return new_filename
         index += 1
 
-
-def format_log(input_file, output_file, level_filter=None):
-    # Read the content of the log file and split it into lines
-    with open(input_file, 'r') as f:
-        log_content = f.read().splitlines()
-
+def format_log(log_content, level_filter=None):
     formatted_logs = []
 
-    # Loop through each log entry in the file
+    # Loopa igenom varje loggpost i filen
     for log_entry in log_content:
         try:
-            # Try to decode the log entry as JSON
+            # Försök avkoda loggposten som JSON
             log_json = json.loads(log_entry)
             log_level = log_json.get("level", -1)
 
-            # Check if the log level matches the filter (if provided)
-            if level_filter is None or log_level in level_filter:
-                # Set a label based on the log level
-                level_label = "ERROR" if log_level == 3 else "FATAL"
+            # Om level_filter är angivet, filtrera efter loggnivå
+            if level_filter is not None and log_level != level_filter:
+                continue
 
-                # Add the formatted log entry to the list
-                formatted_logs.append({
-                    "level": level_label,
-                    "time": log_json["time"],
-                    "user": log_json["user"],
-                    "method": log_json["method"],
-                    "url": log_json["url"],
-                    "message": log_json["message"]
-                })
+            # Skapa en formaterad loggpost och lägg till den i listan
+            formatted_logs.append({
+                "level": log_json.get("level"),
+                "time": log_json.get("time"),
+                "user": log_json.get("user"),
+                "method": log_json.get("method"),
+                "url": log_json.get("url"),
+                "message": log_json.get("message")
+            })
         except json.JSONDecodeError as e:
-            # Print an error message if JSON decoding fails
+            # Skriv ut ett felmeddelande om JSON-avkodning misslyckas
             print(f"Error decoding JSON: {e}")
 
-    # Generate unique filenames for the formatted log files
-    output_file = get_available_filename(output_file)
+    return formatted_logs
 
-    # Write the formatted log entries to the new file
-    with open(output_file, 'w') as f:
-        for formatted_log in formatted_logs:
-            # Write the log level and information for each log entry
-            f.write(f"Level: {formatted_log['level']}\n")
-            f.write(
-                f"Time: {formatted_log['time']} - User: {formatted_log['user']}, Method: {formatted_log['method']}, URL: {formatted_log['url']}, Message: {formatted_log['message']}\n\n")
+def format_and_analyze_logs(input_file, filtered_output_file, all_output_file):
+    with open(input_file, 'r') as f:
+        log_content = f.read().splitlines()
 
-    return output_file  # Return the generated filename
+    # Formatera loggfilen med level-filter
+    filtered_logs = format_log(log_content, level_filter=3)
 
+    # Formatera hela loggfilen
+    all_logs = format_log(log_content)
+
+    # Skapa unika filnamn med datum och klockslag
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filtered_output_file = f"{os.path.splitext(filtered_output_file)[0]}[{timestamp}].txt"
+    all_output_file = f"{os.path.splitext(all_output_file)[0]}[{timestamp}].txt"
+
+    # Skriv de formaterade resultaten till de nya filerna
+    with open(filtered_output_file, 'w') as f:
+        for log_entry in filtered_logs:
+            f.write(json.dumps(log_entry) + "\n")
+
+    with open(all_output_file, 'w') as f:
+        for log_entry in all_logs:
+            f.write(json.dumps(log_entry) + "\n")
+
+    return filtered_output_file, all_output_file
 
 if __name__ == "__main__":
-    # Check that there is exactly one argument (the file name)
+    # Kontrollera att det finns exakt ett argument (filnamnet)
     if len(sys.argv) != 2:
-        print("Usage: python convert_log.py log_file.log")
+        print("Användning: python format_log.py loggfil.log")
         sys.exit(1)
 
-    # Get the file name from the command line
+    # Hämta filnamnet från kommandoraden
     input_file = sys.argv[1]
 
-    # Set the output file names
-    filtered_output_file = f"{os.path.splitext(input_file)[0]}_formatted_filtered.txt"
-    all_output_file = get_available_filename(f"{os.path.splitext(input_file)[0]}_formatted_all.txt")
+    # Ange filnamnen för de nya filerna
+    filtered_output_file = f"{os.path.splitext(input_file)[0]}_formatted_filtered"
+    all_output_file = f"{os.path.splitext(input_file)[0]}_all_formatted"
 
-    # Call the format_log function for level 3 and 4 errors
-    filtered_filename = format_log(input_file, filtered_output_file, level_filter=[3, 4])
+    # Formatera loggfilen
+    filtered_filename, all_filename = format_and_analyze_logs(input_file, filtered_output_file, all_output_file)
 
-    # Call the format_log function for all errors
-    all_filename = format_log(input_file, all_output_file)
-
-    # Print messages indicating that the formatted log files have been created
+    # Skriv ut meddelanden om att de nya filerna har skapats
     print(f"Filtered formatted log file created: {filtered_filename}")
     print(f"All formatted log file created: {all_filename}")
