@@ -33,11 +33,18 @@ def format_log_entry(log_entry):
         log_level_text = level_mapping.get(log_level, "UNKNOWN")
 
         formatted_log = f"{log_level_text}\n"
+        formatted_log += f"Request Id: {log_json.get('reqId')}\n"
         formatted_log += f"Time: {log_json.get('time')}\n"
+        formatted_log += f"Remote Address: {log_json.get('remoteAddr')}\n"
         formatted_log += f"User: {log_json.get('user')}\n"
+        formatted_log += f"App: {log_json.get('app')}\n"
         formatted_log += f"Method: {log_json.get('method')}\n"
         formatted_log += f"URL: {log_json.get('url')}\n"
         formatted_log += f"Message: {log_json.get('message')}\n"
+        formatted_log += f"User Agent: {log_json.get('userAgent')}\n"
+        formatted_log += f"Exception: {log_json.get('exception')}\n"
+        formatted_log += f"Data: {log_json.get('data')}\n"
+        formatted_log += f"Version: {log_json.get('version')}\n"
 
         return formatted_log
 
