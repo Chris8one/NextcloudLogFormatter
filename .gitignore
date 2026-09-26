@@ -1,0 +1,8 @@
+.idea/
+__pycache__/
+*.pyc
+openai_key.txt
+.env
+*_formatted*.txt
+*_all_formatted*.txt
+analyzed_log*.txt
