@@ -51,7 +51,7 @@ def analyze_errors_with_openai(error_messages):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Ange filnamnet som ett argument. Exempel: python format_log_chatgpt.py nextcloud.log")
+        print("Ange filnamnet som ett argument. Exempel: python ai_log_analysis_prototype.log")
         sys.exit(1)
 
     input_file = sys.argv[1]
